@@ -1,12 +1,11 @@
 #include <algorithm>
+#include <cmath>
 #include <iostream>
+#include <map>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
-#include <cmath>
-#include <numeric>
 
 using namespace std;
 
@@ -62,8 +61,8 @@ public:
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         int words_count = 0;
+        words_count = count(words.begin(), words.end(), word);
         for (const string& word : words) {
-            words_count = count(words.begin(), words.end(), word);
             word_to_document_freqs_[word].insert({ document_id, static_cast<double>(words_count) / words.size() });
         }
         document_count_ += 1;
@@ -99,7 +98,7 @@ private:
         set<string> minus_words;
     };
 
-    double Idf(double docs_count) const {
+    double GetIdf(double docs_count) const {
         return log(document_count_ / static_cast<double>(docs_count));
     }
 
@@ -160,10 +159,8 @@ private:
         for (const auto& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) != 0) {
                 int id_count = word_to_document_freqs_.at(word).size();
-
+                tf_idf = tf * GetIdf(static_cast<double>(id_count));
                 for (const auto& [id, tf] : word_to_document_freqs_.at(word)) {
-                    tf_idf = tf * Idf(static_cast<double>(id_count));
-
                     document_to_relevance[id] += tf_idf;
                 }
             }
