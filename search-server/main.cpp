@@ -61,9 +61,10 @@ public:
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         int words_count = 0;
-        words_count = count(words.begin(), words.end(), word);
+        double tf_one_word = 1.0 / words.size();
         for (const string& word : words) {
-            word_to_document_freqs_[word].insert({ document_id, static_cast<double>(words_count) / words.size() });
+            words_count = count(words.begin(), words.end(), word);
+            word_to_document_freqs_[word][document_id] += tf_one_word;
         }
         document_count_ += 1;
     }
@@ -159,8 +160,9 @@ private:
         for (const auto& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) != 0) {
                 int id_count = word_to_document_freqs_.at(word).size();
-                tf_idf = tf * GetIdf(static_cast<double>(id_count));
+                double idf = GetIdf(static_cast<double>(id_count));
                 for (const auto& [id, tf] : word_to_document_freqs_.at(word)) {
+                    tf_idf = tf * idf;
                     document_to_relevance[id] += tf_idf;
                 }
             }
