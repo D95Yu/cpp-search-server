@@ -97,15 +97,15 @@ public:
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                      const vector<int>& ratings) {
-        if (document_id < 0 || documents_.count(document_id) > 0) {
+        if (document_id < 0 ) {
             throw invalid_argument("invalid id"s);
+        }
+        if (documents_.count(document_id) > 0) {
+            throw invalid_argument("already have document with this id"s);
         }
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
-            if (!IsValidWord(word)) {
-                throw invalid_argument("invalid word in document"s);
-            }
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -114,10 +114,7 @@ public:
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            throw invalid_argument("query has invalid word"s);
-        }
+        Query query = ParseQuery(raw_query);
         auto result = FindAllDocuments(query, document_predicate);
         const double EPSILON = 1e-6;
 
@@ -152,10 +149,7 @@ public:
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, 
                                                                 int document_id) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            throw invalid_argument("query has invalid word"s);
-        }
+        Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -208,6 +202,9 @@ private:
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("invalid word in document"s);
+            }
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -235,6 +232,9 @@ private:
     QueryWord ParseQueryWord(string text) const {
         bool is_minus = false;
         // Word shouldn't be empty
+        if ((text[0] == '-' && text[1] == '-') || (text[0] == '-' && text.size() == 1) || !IsValidWord(text)) {
+                throw invalid_argument("invalid word in query"s);
+            }
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
@@ -247,11 +247,9 @@ private:
         set<string> minus_words;
     };
 
-    bool ParseQuery(const string& text, Query& query) const {
+    Query ParseQuery(const string& text) const {
+        Query query;
         for (const string& word : SplitIntoWords(text)) {
-            if ((word[0] == '-' && word[1] == '-') || (word[0] == '-' && word.size() == 1) || !IsValidWord(word)) {
-                return false;
-            }
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -261,7 +259,7 @@ private:
                 }
             }
         }
-        return true;
+        return query;
     }
 
     // Existence required
