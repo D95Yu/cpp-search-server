@@ -10,15 +10,6 @@
 
 using namespace std;
 
-    /*template <typename StringContainer>
-    explicit SearchServer(const StringContainer& stop_words)
-        : stop_words_(MakeUniqueNonEmptyStrings(stop_words))  // Extract non-empty stop words
-    {
-        if (!all_of(stop_words_.begin(), stop_words_.end(), IsValidWord)) {
-            throw invalid_argument("Some of stop words are invalid"s);
-        }
-    }*/
-
     SearchServer::SearchServer(const string& stop_words_text)
         : SearchServer(
             SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
@@ -110,9 +101,7 @@ using namespace std;
     }
 
     int SearchServer::ComputeAverageRating(const vector<int>& ratings) {
-        if (ratings.empty()) {
-            return 0;
-        }
+
         int rating_sum = 0;
         for (const int rating : ratings) {
             rating_sum += rating;
